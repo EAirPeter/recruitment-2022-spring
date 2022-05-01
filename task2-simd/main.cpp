@@ -241,15 +241,41 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
 }
 
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
+  __cs149_vec_float vfClamp = _cs149_vset_float(9.999999f);
+  __cs149_vec_int vi0 = _cs149_vset_int(0);
+  __cs149_vec_int vi1 = _cs149_vset_int(1);
 
-  //
-  // CS149 STUDENTS TODO: Implement your vectorized version of
-  // clampedExpSerial() here.
-  //
-  // Your solution should work for any value of
-  // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
-  //
-  
+  for (int i = 0; i < N; i += VECTOR_WIDTH) {
+    __cs149_mask mValid, mActive;
+    __cs149_vec_float vfOutput, vfX;
+    __cs149_vec_int viY, viCount;
+
+    mValid = _cs149_init_ones(std::min(VECTOR_WIDTH, N - i));
+    _cs149_vload_float(vfX, values + i, mValid);
+    _cs149_vload_int(viY, exponents + i, mValid);
+
+    _cs149_veq_int(mActive, viY, vi0, mValid);
+    _cs149_vset_float(vfOutput, 1.0f, mActive);
+
+    mActive = _cs149_mask_not(mActive);
+    mActive = _cs149_mask_and(mActive, mValid);
+
+    if (_cs149_cntbits(mActive)) {
+      __cs149_mask mLoop = _cs149_init_ones(0);
+      _cs149_vmove_float(vfOutput, vfX, mActive);
+      _cs149_vsub_int(viCount, viY, vi1, mActive);
+      _cs149_vlt_int(mLoop, vi0, viCount, mActive);
+      while (_cs149_cntbits(mLoop)) {
+        _cs149_vmult_float(vfOutput, vfOutput, vfX, mLoop);
+        _cs149_vsub_int(viCount, viCount, vi1, mLoop);
+        _cs149_vlt_int(mLoop, vi0, viCount, mLoop);
+      }
+      _cs149_vlt_float(mActive, vfClamp, vfOutput, mActive);
+      _cs149_vset_float(vfOutput, 9.999999f, mActive);
+    }
+
+    _cs149_vstore_float(output + i, vfOutput, mValid);
+  }
 }
 
 // returns the sum of all elements in values
@@ -266,15 +292,26 @@ float arraySumSerial(float* values, int N) {
 // You can assume N is a multiple of VECTOR_WIDTH
 // You can assume VECTOR_WIDTH is a power of 2
 float arraySumVector(float* values, int N) {
-  
-  //
-  // CS149 STUDENTS TODO: Implement your vectorized version of arraySumSerial here
-  //
-  
-  for (int i=0; i<N; i+=VECTOR_WIDTH) {
+  __cs149_mask mAll = _cs149_init_ones(VECTOR_WIDTH);
+  __cs149_mask mSingle = _cs149_init_ones(1);
+  __cs149_vec_float vfSum = _cs149_vset_float(0.0f);
 
+  for (int i = 0; i < N; i += VECTOR_WIDTH) {
+    __cs149_vec_float vfValues;
+    _cs149_vload_float(vfValues, values + i, mAll);
+    _cs149_vadd_float(vfSum, vfSum, vfValues, mAll);
   }
 
-  return 0.0;
+  if (VECTOR_WIDTH > 1) {
+    _cs149_hadd_float(vfSum, vfSum);
+    for (int i = 2; i < VECTOR_WIDTH; i <<= 1) {
+      _cs149_interleave_float(vfSum, vfSum);
+      _cs149_hadd_float(vfSum, vfSum);
+    }
+  }
+
+  float result;
+  _cs149_vstore_float(&result, vfSum, mSingle);
+  return result;
 }
 
