@@ -22,6 +22,11 @@ extern void mandelbrotSerial(
     int maxIterations,
     int output[]);
 
+#include <algorithm>
+#include <atomic>
+
+constexpr int kGranularity = 1;
+static std::atomic_int g_Counter;
 
 //
 // workerThreadStart --
@@ -37,12 +42,17 @@ void workerThreadStart(WorkerArgs * const args) {
 
     //const double t1 = CycleTimer::currentSeconds();
 
-    const int div = args->height / args->numThreads;
-    const int mod = args->height % args->numThreads;
-    const int totalRows = args->threadId < mod ? div + 1 : div;
-    const int startRow = args->threadId < mod ? args->threadId * totalRows : args->threadId * totalRows + mod;
+    for (;;)
+    {
+        const int startRow = g_Counter.fetch_add(kGranularity, std::memory_order_relaxed);
 
-    mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, startRow, totalRows, args->maxIterations, args->output);
+        if (startRow >= (int)args->height)
+            break;
+
+        const int totalRows = std::min(kGranularity, (int)args->height - startRow);
+
+        mandelbrotSerial(args->x0, args->y0, args->x1, args->y1, args->width, args->height, startRow, totalRows, args->maxIterations, args->output);
+    }
 
     //const double t2 = CycleTimer::currentSeconds();
     //printf("[%d] %fs \n", args->threadId, t2 - t1);
@@ -70,6 +80,8 @@ void mandelbrotThread(
     // Creates thread objects that do not yet represent a thread.
     std::thread workers[MAX_THREADS];
     WorkerArgs args[MAX_THREADS];
+
+    g_Counter.store(0, std::memory_order_relaxed);
 
     for (int i=0; i<numThreads; i++) {
       
