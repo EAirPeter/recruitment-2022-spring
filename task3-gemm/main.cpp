@@ -31,9 +31,15 @@ void Gemm(const int &inSize, vec &inA, vec &inB, vec &outC)
     register const int* b = inB.data();
     register int* c = outC.data();
     for(register int i = 0; i < size; i++)
+    {
         for(register int j = 0; j < size; j++)
+        {
+            register int sum = 0;
             for(register int k = 0; k < size; k++)
-                c[i * size + j] += a[i * size + k] * b[k * size + j];
+               sum += a[i * size + k] * b[k * size + j];
+            c[i * size + j] = sum;
+        }
+    }
 }
 
 void CheckResult(const vec &c, const string &result_path) {
