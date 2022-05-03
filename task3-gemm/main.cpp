@@ -24,11 +24,15 @@ using vec = vector<int>;
 const int scale[] = {256, 512, 1024, 2048};
 const string data_path("./data/");
 
-void Gemm(const int &size, vec &a, vec &b, vec &c)
+void Gemm(const int &inSize, vec &inA, vec &inB, vec &outC)
 {
-    for(int i = 0; i < size; i++)
-        for(int j = 0; j < size; j++)
-            for(int k = 0; k < size; k++)
+    register const int size = inSize;
+    register const int* a = inA.data();
+    register const int* b = inB.data();
+    register int* c = outC.data();
+    for(register int i = 0; i < size; i++)
+        for(register int j = 0; j < size; j++)
+            for(register int k = 0; k < size; k++)
                 c[i * size + j] += a[i * size + k] * b[k * size + j];
 }
 
