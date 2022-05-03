@@ -24,7 +24,7 @@ using vec = vector<int>;
 const int scale[] = {256, 512, 1024, 2048};
 const string data_path("./data/");
 
-#define USE_ASM 1
+#define USE_ASM 0
 
 #if USE_ASM
 __attribute__((naked))
@@ -105,13 +105,16 @@ void Gemm(const int &inSize, vec &inA, vec &inB, vec &outC)
     register int* c = outC.data();
     for(register int i = 0; i < size; i++)
     {
-        for(register int j = 0; j < size; j++)
+        register const int* b_ = b;
+        for(register int k = 0; k < size; k++)
         {
-            register int sum = 0;
-            for(register int k = 0; k < size; k++)
-               sum += a[i * size + k] * b[k * size + j];
-            c[i * size + j] = sum;
+            register const int aik = a[k];
+            for(register int j = 0; j < size; j++)
+                c[j] += aik * b_[j];
+            b_ += size;
         }
+        a += size;
+        c += size;
     }
 #endif
 }
