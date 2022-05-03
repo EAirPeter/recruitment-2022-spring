@@ -19,16 +19,17 @@ using namespace std;
 
 using namespace chrono;
 
-using vec = vector<int>; 
+using vec = vector<int>;
 
 const int scale[] = {256, 512, 1024, 2048};
 const string data_path("./data/");
 
-void Gemm(const int &size, vec &a, vec &b, vec &c) {
+void Gemm(const int &size, vec &a, vec &b, vec &c)
+{
     for(int i = 0; i < size; i++)
         for(int j = 0; j < size; j++)
             for(int k = 0; k < size; k++)
-                c[i*size+j] += a[i*size+k] * b[k*size+j];
+                c[i * size + j] += a[i * size + k] * b[k * size + j];
 }
 
 void CheckResult(const vec &c, const string &result_path) {
@@ -65,7 +66,7 @@ void Benchmark(const int &size) {
     PRINT_TIME(
        Gemm(size, a, b, c);
     );
-    
+
     CheckResult(c, result_path);
 
     file_a.close();
