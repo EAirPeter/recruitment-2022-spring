@@ -94,6 +94,9 @@ static void GemmImpl(int N, const int* A, const int* B, int* C)
 }
 #endif
 
+constexpr int CacheSizeLog = 14 - 2;
+constexpr int CacheSize = 1 << CacheSizeLog;
+
 void Gemm(const int &inSize, vec &inA, vec &inB, vec &outC)
 {
 #if USE_ASM
@@ -103,13 +106,13 @@ void Gemm(const int &inSize, vec &inA, vec &inB, vec &outC)
     register const int* a = inA.data();
     register const int* b = inB.data();
     register int* c = outC.data();
-    for(register int i = 0; i < size; i++)
+    for (register int i = 0; i < size; i++)
     {
         register const int* b_ = b;
-        for(register int k = 0; k < size; k++)
+        for (register int k = 0; k < size; k++)
         {
             register const int aik = a[k];
-            for(register int j = 0; j < size; j++)
+            for (register int j = 0; j < size; j++)
                 c[j] += aik * b_[j];
             b_ += size;
         }
